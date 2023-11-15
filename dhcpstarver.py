@@ -133,7 +133,7 @@ if __name__ == "__main__":
     # loggingEnabled        - Czy zapisywać każdy z komunikatów do pliku log.txt?
 
     singleSpoofedMAC    = False
-    customMAC           = ""
+    customMAC           = "CB:EC:BD:CB:EC:BD"
     finishDORA          = True
     sleepTimer          = 0.002
     targetDHCPServerIP  = "10.0.0.3"
