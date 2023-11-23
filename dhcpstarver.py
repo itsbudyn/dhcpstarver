@@ -17,7 +17,7 @@ class DHCPStarvation:
         self.targetDHCPServerIP=targetDHCPServerIP
         self.loggingEnabled=loggingEnabled
 
-        if singleSpoofedMAC and len(customMAC) > 0: self.singlemac = customMAC
+        if singleSpoofedMAC and customMAC: self.singlemac = customMAC
 
     # Funkcja drukująca komunikaty na stdout oraz zapisująca do pliku log.txt
     def log(self, message):
@@ -166,7 +166,7 @@ Jeżeli rozumiesz powyższą treść oraz przyjmujesz odpowiedzialność
 """
 )
 
-    loop = DHCPStarvation(singleSpoofedMAC, customMAC, finishDORA, sleepTimer, targetDHCPServerIP, loggingEnabled)
+    loop = DHCPStarvation(iface, singleSpoofedMAC, customMAC, finishDORA, sleepTimer, targetDHCPServerIP, loggingEnabled)
 
     while True:
         choice=input("> ")
