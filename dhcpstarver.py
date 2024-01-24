@@ -8,14 +8,13 @@ import argparse
 
 class DHCPStarvation:
     def __init__(self, iface="", finishDORA=False, sleepTimer=0.2, targetDHCPServerIP="255.255.255.255", logfile=""):
-        self.macs = []
-        self.singlemac = ""
-
-        self.iface = iface
-        self.sleepTimer = sleepTimer
-        self.finishDORA = finishDORA
+        self.macs               = []
+        self.singlemac          = ""
+        self.iface              = iface
+        self.sleepTimer         = sleepTimer
+        self.finishDORA         = finishDORA
         self.targetDHCPServerIP = targetDHCPServerIP
-        self.logfile = logfile
+        self.logfile            = logfile
 
     # Function to write events to stdout and log to file if enabled
     def log(self, message):
