@@ -11,3 +11,18 @@ The intent of this script is to test preventative measures against DHCP Starvati
 This script must not be run on anything other than authorized networks, to which you have the right to perform such test (preferrably your own). Running this in any other circumstances may constitute an offence. I am not responsible for any consequences of user actions, e.g. disciplinary, criminal or network disruption, as stated in GPL-3.0 Licence terms. 
 
 Use of this script indicates you acknowledge this warning and licence terms and accept full responsibility.</b>
+
+# Usage
+Usage: `dhcpstarver.py [-h] [-f] [-t TIME] [-s IP] [-l FILE] iface`
+```
+Positional arguments:
+  iface                 Used network interface
+
+Options:
+  -h, --help            show this help message and exit
+  -f, --full            Complete DORA by replying to DHCPOFFER messages with DHCPREQUEST
+  -t TIME, --time TIME  Time between DHCPDISCOVER messages. Default - 0.001s
+  -s IP, --server IP    Target IP of DHCP Server. Default - Broadcast
+  -l FILE, --log FILE   Enable logging to a text file
+```
+
