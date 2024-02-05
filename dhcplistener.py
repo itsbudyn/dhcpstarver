@@ -2,6 +2,7 @@ from scapy.all import *
 from scapy.layers.dhcp import DHCP
 from scapy.layers.l2 import Ether
 from time import time
+import argparse
 
 class DHCPListener:
     def __init__(self, iface, maxDHCPDiscoveriesPerSecond, authorizedIPs, loggingEnabled):
@@ -71,16 +72,16 @@ class DHCPListener:
 
 
 if __name__ == "__main__":
-    # iface                         - Interfejs do nasłuchiwania ruchu sieciowego.
-    # maxDHCPDiscoveriesPerSecond   - Ile komunikatów DHCP Discover można otrzymać w ciągu sekundy przed wygenerowaniem alertu?
-    # authorizedIPs                 - Adresy IP autoryzowanych serwerów DHCP.
-    # loggingEnabled                - Czy zapisywać każdy z komunikatów do pliku log.txt?
+    authorizedIPs = [ "10.0.0.3" ]
 
-    iface                       = "enp3s0"
-    maxDHCPDiscoveriesPerSecond = 15
-    authorizedIPs               = [ "10.0.0.3" ]
-    loggingEnabled              = True
+    ver = "0.9.0"
 
-    listener = DHCPListener(iface, maxDHCPDiscoveriesPerSecond, authorizedIPs, loggingEnabled)
+    parser = argparse.ArgumentParser(description=f"DHCP Attack Listener - by itsbudyn - v{ver}")
+    parser.add_argument("iface", type=str, help="Used network interface")
+    parser.add_argument("-m","--max", type=float, default=12, help="Max ammount of DHCPDISCOVER messages per second. Default - 15")
+    parser.add_argument("-l","--log", metavar="FILE", type=str, default="", help="Enable logging to a text file")
+    args = parser.parse_args()
+
+    listener = DHCPListener(args.iface, args.max, authorizedIPs, args.log)
     starttime = time()
     listener.listen()
