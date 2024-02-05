@@ -32,9 +32,7 @@ Options:
 Under construction
 
 # Todo
-- refactor dhcplistener
-  - translate to english
-  - move from hardcode to argparse
+- dhcplistener: move from hardcode to argparse
 - add GUI to dhcpstarver
 - add GUI to dhcplistener
 - combine both scripts into single app
