@@ -18,8 +18,8 @@ class DHCPListener:
         timestamp=str(time()-starttime)[:14]
         out=str(timestamp+"\t"+message+"\n")
         print(out,end="\0")
-        if self.loggingEnabled:
-            with open("log.txt","a",encoding="UTF-8") as f: f.write(out)
+        if self.logfile:
+            with open(self.logfile,"a",encoding="UTF-8") as f: f.write(out)
 
     # Sniffing UDP datagrams from ports 67, 68. Pass matches to handleDHCP()
     def listen(self): 
@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=f"DHCP Attack Listener - by itsbudyn - v{ver}")
     parser.add_argument("iface", type=str, help="Used network interface")
-    parser.add_argument("-m","--max", type=float, default=12, help="Max ammount of DHCPDISCOVER messages per second. Default - 15")
+    parser.add_argument("-m","--max", type=float, default=15, help="Max ammount of DHCPDISCOVER messages per second. Default - 15")
     parser.add_argument("-l","--log", metavar="FILE", type=str, default="", help="Enable logging to a text file")
     args = parser.parse_args()
 
