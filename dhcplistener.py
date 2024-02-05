@@ -4,7 +4,7 @@ from scapy.layers.l2 import Ether
 from time import time
 
 class DHCPListener:
-    def __init__(self, iface="", maxDHCPDiscoveriesPerSecond = 5, authorizedIPs=[], loggingEnabled=False):
+    def __init__(self, iface, maxDHCPDiscoveriesPerSecond, authorizedIPs, loggingEnabled):
         self.DHCPDiscoverTimestamps = []
         
         self.maxDHCPPDiscoverPerSecond  = maxDHCPDiscoveriesPerSecond
@@ -12,7 +12,7 @@ class DHCPListener:
         self.authorizedIPs              = authorizedIPs
         self.loggingEnabled             = loggingEnabled
 
-    # Funkcja drukująca komunikaty na stdout oraz zapisująca do pliku log.txt
+    # Function to write events to stdout and log to file if enabled
     def log(self, message):
         timestamp=str(time()-starttime)[:14]
         out=str(timestamp+"\t"+message+"\n")
@@ -20,29 +20,29 @@ class DHCPListener:
         if self.loggingEnabled:
             with open("log.txt","a",encoding="UTF-8") as f: f.write(out)
 
-    # Nasłuchiwanie pakietów UDP na portach 67 i 68 - Przekazanie pasujących pakietów do metody handleDHCP
+    # Sniffing UDP datagrams from ports 67, 68. Pass matches to handleDHCP()
     def listen(self): 
-        self.log("INFO: Uruchomiono listener")
+        self.log("INFO: Listener started!")
         sniff(filter="udp and (port 67 or port 68)", prn=self.handleDHCP, store=0, iface=self.iface)
 
     def getDHCPOption(self, packet, option:str):
         for i in packet[DHCP].options:
             if i[0] == option: return i[1]
 
-    # Obsługa otrzymanych pakietów DHCP
+    # Handles received DHCP Packets
     def handleDHCP(self, pkt):
         if pkt[DHCP]:
             msgtype = self.getDHCPOption(pkt, "message-type")
            
             match msgtype:
-                # Jeżeli otrzymamy pakier DHCPDISCOVER
+                # On DHCPDISCOVER
                 case 1:
-                    # Pobranie parametrów z pakietu
+                    # Get parameters from packet
                     rcvd_mac = pkt[Ether].src
-                    self.log(f"INFO: Wykryto DHCPDISCOVER od {rcvd_mac}")
+                    self.log(f"INFO: RECV DHCPDISCOVER from {rcvd_mac}")
                     self.DHCPDiscoverTimestamps.append((time()-starttime, rcvd_mac))
 
-                    # Usuwanie pakietów starszych niż sekunda
+                    # Pop packets older than 1 second
                     indexes = []
                     for i in range(len(self.DHCPDiscoverTimestamps)):
                         if time() - starttime - self.DHCPDiscoverTimestamps[i][0] >= 1: indexes.append(i)
@@ -51,23 +51,23 @@ class DHCPListener:
                         for i in indexes:
                             self.DHCPDiscoverTimestamps.pop(i)
 
-                    if len(self.DHCPDiscoverTimestamps) > self.maxDHCPPDiscoverPerSecond: self.log(f"ALERT: Przekroczono limit pakietów DHCPDISCOVER na sekundę! ({len(self.DHCPDiscoverTimestamps)}/{self.maxDHCPPDiscoverPerSecond}) {self.DHCPDiscoverTimestamps}")
+                    if len(self.DHCPDiscoverTimestamps) > self.maxDHCPPDiscoverPerSecond: self.log(f"ALERT: Exceeded limit of DHCPDISCOVER per second! ({len(self.DHCPDiscoverTimestamps)}/{self.maxDHCPPDiscoverPerSecond}) {self.DHCPDiscoverTimestamps}")
 
-                # Jeżeli otrzymamy pakiet DHCPOFFER
+                # On DHCPOFFER
                 case 2:
-                    # Pobranie parametrów z pakietu
+                    # Get parameters from packet
                     server_ip = self.getDHCPOption(pkt, "server_id")
                     server_mac = pkt[Ether].src
 
-                    if server_ip not in self.authorizedIPs: self.log(f"ALERT: Odebrano DHCPOFFER od nieautoryzowanego serwera! ({server_ip} {server_mac})")
+                    if server_ip not in self.authorizedIPs: self.log(f"ALERT: RECV DHCPOFFER from unauthorized server! ({server_ip} {server_mac})")
 
-                # Jeżeli otrzymamy pakiet DHCPREQUEST
+                # On DHCPREQUEST
                 case 3:
-                    # Pobranie parametrów z pakietu
+                    # Get parameters from packet
                     server_ip = self.getDHCPOption(pkt, "server_id")
                     rcvd_mac = pkt[Ether].src
 
-                    if server_ip not in self.authorizedIPs: self.log(f"ALERT: Odebrano DHCPREQUEST wskazujący na nieautoryzowany serwer! ({server_ip}) MAC źródła pakietu: {rcvd_mac}")
+                    if server_ip not in self.authorizedIPs: self.log(f"ALERT: RECV DHCPREQUEST targetting an unauthorized server! ({server_ip}) Source MAC: {rcvd_mac}")
 
 
 if __name__ == "__main__":
