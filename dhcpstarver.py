@@ -7,7 +7,7 @@ from threading import Thread
 import argparse
 
 class DHCPStarvation:
-    def __init__(self, iface:str, finishDORA:bool, sleepTimer:float, targetDHCPServerIP:str, logfile:float):
+    def __init__(self, iface:str, finishDORA:bool, sleepTimer:float, targetDHCPServerIP:str, logfile:str):
         self.macs               = []
         self.singlemac          = ""
         self.iface              = iface
