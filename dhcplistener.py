@@ -5,13 +5,13 @@ from time import time
 import argparse
 
 class DHCPListener:
-    def __init__(self, iface, maxDHCPDiscoveriesPerSecond, authorizedIPs, loggingEnabled):
+    def __init__(self, iface:str, maxDHCPDiscoveriesPerSecond:int, authorizedIPs, logfile:str):
         self.DHCPDiscoverTimestamps = []
         
         self.maxDHCPPDiscoverPerSecond  = maxDHCPDiscoveriesPerSecond
         self.iface                      = iface
         self.authorizedIPs              = authorizedIPs
-        self.loggingEnabled             = loggingEnabled
+        self.logfile                    = logfile
 
     # Function to write events to stdout and log to file if enabled
     def log(self, message):
