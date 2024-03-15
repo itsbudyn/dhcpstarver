@@ -23,10 +23,18 @@ Options:
 ```
 
 # DHCP Listener Usage
-Under construction
+Usage: `dhcplistener.py [-h] [-m MAX] [-l FILE] iface`
+```
+Positional arguments:
+  iface                Used network interface
+
+Options:
+  -h, --help           show this help message and exit
+  -m MAX, --max MAX    Max ammount of DHCPDISCOVER messages per second. Default - 15
+  -l FILE, --log FILE  Enable logging to a text file
+```
 
 # Todo
-- dhcplistener: move from hardcode to argparse
 - add GUI to dhcpstarver
 - add GUI to dhcplistener
 - combine both scripts into single app
